@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CreatingStorePage() {
-  const [userID, setUserID] = useState("");
+  const [userID, setUserID] = useState<string | null>(null);
   const [storeName, setStoreName] = useState("");
   const [itemType, setItemType] = useState("");
   const [numCategories, setNumCategories] = useState("");
@@ -12,15 +12,26 @@ export default function CreatingStorePage() {
 
   const router = useRouter();
 
+  // Check authentication
   useEffect(() => {
     const storedUserID = localStorage.getItem("userID");
-    if (storedUserID) {
+
+    if (!storedUserID) {
+      // Redirect to login if no userID
+      router.push("/login");
+    } else {
       setUserID(storedUserID);
     }
-  }, []);
+  }, [router]);
 
   const handleCreateStore = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!userID) {
+      alert("User not authenticated. Please log in.");
+      router.push("/login");
+      return;
+    }
 
     try {
       const response = await fetch("/api/create-store", {
@@ -43,17 +54,20 @@ export default function CreatingStorePage() {
         throw new Error(data.message || "Failed to create store.");
       }
 
-      // ✅ Save storeID to localStorage
       if (data.storeID) {
         localStorage.setItem("storeID", data.storeID);
         alert("Store created successfully!");
-        // ✅ Navigate only after storeID is stored
         router.push("/AddItemCategoryPage");
       }
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     }
   };
+
+  // Show nothing until auth check is complete
+  if (userID === null) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
